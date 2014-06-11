@@ -112,21 +112,6 @@ Ember.AddeparMixins.ResizeHandlerMixin,
     columns
   .property 'columns.@each', 'numFixedColumns'
 
-  ###*
-  * Amount of width that could be filled by auto-resizing columns. Could be
-  * negative if the table is too wide and scrolls horizontally.
-  * @memberof Ember.Table.EmberTableComponent
-  * @instance
-  * @todo Much more doc needed
-  ###
-  availableWidth: Ember.computed ->
-    allColumns = @get('tableColumns').concat(@get('fixedColumns'))
-    unresizableColumns = allColumns.filterProperty('canAutoResize', no)
-    unresizableWidth = @_getTotalWidth unresizableColumns
-    @get('_width') - unresizableWidth
-  .property('_width', 'fixedColumns.[]', 'fixedColumns.@each.canAutoResize',
-    'tableColumns.[]', 'tableColumns.@each.canAutoResize')
-
   prepareTableColumns: (columns) ->
     columns.setEach 'controller', this
 
@@ -188,32 +173,31 @@ Ember.AddeparMixins.ResizeHandlerMixin,
     this.$('.antiscroll-wrap').antiscroll().data('antiscroll').rebuild();
     @doForceFillColumns() if @get 'columnsFillTable'
 
-  resizeColumns: (columnsToResize) ->
-    availableWidth = @get('availableWidth')
+  doForceFillColumns: ->
+    allColumns = @get('tableColumns').concat(@get('fixedColumns'))
+    columnsToResize = allColumns.filterProperty('canAutoResize')
+    unresizableColumns = allColumns.filterProperty('canAutoResize', no)
+    availableWidth = @get('_width') - @_getTotalWidth(unresizableColumns)
     doNextLoop = yes
     while doNextLoop
       doNextLoop = no
       nextColumnsToResize = []
-      totalSavedWidth = @_getTotalWidth columnsToResize, 'savedWidth'
+      totalResizableWidth = @_getTotalWidth columnsToResize
       columnsToResize.forEach (column) =>
-        newColumnWidth = Math.floor(
-          (column.get('savedWidth') / totalSavedWidth) * availableWidth)
-        if newColumnWidth < column.get('minWidth')
+        newWidth = Math.floor(
+          (column.get('width') / totalResizableWidth) * availableWidth)
+        if newWidth < column.get('minWidth')
           doNextLoop = yes
-          column.set 'columnWidth', column.get('minWidth')
-          availableWidth -= column.get 'columnWidth'
-        else if newColumnWidth > column.get('maxWidth')
+          column.set 'width', column.get('minWidth')
+          availableWidth -= column.get 'width'
+        else if newWidth > column.get('maxWidth')
           doNextLoop = yes
-          column.set 'columnWidth', column.get('maxWidth')
-          availableWidth -= column.get 'columnWidth'
+          column.set 'width', column.get('maxWidth')
+          availableWidth -= column.get 'width'
         else
-          column.set 'columnWidth', newColumnWidth
+          column.set 'width', newWidth
           nextColumnsToResize.pushObject(column)
       columnsToResize = nextColumnsToResize
-
-  doForceFillColumns: ->
-    columnsToResize = @get('tableColumns').concat(@get('fixedColumns')).filterProperty('canAutoResize')
-    @resizeColumns columnsToResize
 
   onBodyContentLengthDidChange: Ember.observer ->
     Ember.run.next this, -> Ember.run.once this, @updateLayout
@@ -258,7 +242,7 @@ Ember.AddeparMixins.ResizeHandlerMixin,
   ###
   _fixedColumnsWidth: Ember.computed ->
     @_getTotalWidth @get('fixedColumns')
-  .property 'fixedColumns.@each.columnWidth'
+  .property 'fixedColumns.@each.width'
 
   ###*
   * Actual width of the table columns (non-frozen columns)
@@ -270,7 +254,7 @@ Ember.AddeparMixins.ResizeHandlerMixin,
     contentWidth = (@_getTotalWidth @get('tableColumns'))
     availableWidth = @get('_width') - @get('_fixedColumnsWidth')
     if contentWidth > availableWidth then contentWidth else availableWidth
-  .property 'tableColumns.@each.columnWidth', '_width', '_fixedColumnsWidth'
+  .property 'tableColumns.@each.width', '_width', '_fixedColumnsWidth'
 
   ###*
   * Computed Row Width
@@ -390,7 +374,7 @@ Ember.AddeparMixins.ResizeHandlerMixin,
   * @argument columns Columns to calculate width for
   ###
   # TODO(azirbel): getWidthsOfColumns?
-  _getTotalWidth: (columns, columnWidthPath = 'columnWidth') ->
+  _getTotalWidth: (columns, columnWidthPath = 'width') ->
     return 0 unless columns
     widths = columns.getEach(columnWidthPath) or []
     widths.reduce ((total, w) -> total + w), 0
