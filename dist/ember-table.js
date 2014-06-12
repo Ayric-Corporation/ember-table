@@ -1028,8 +1028,8 @@ Ember.Table.HeaderCell = Ember.View.extend(Ember.AddeparMixins.StyleBindingsMixi
     return {
       handles: 'e',
       minHeight: 40,
-      minWidth: this.get('column.minWidth') || 100,
-      maxWidth: this.get('column.maxWidth') || 500,
+      minWidth: this.get('column.minWidth') || 10,
+      maxWidth: this.get('column.maxWidth') || void 0,
       grid: this.get('column.snapGrid'),
       resize: jQuery.proxy(this.onColumnResize, this),
       stop: jQuery.proxy(this.onColumnResize, this)

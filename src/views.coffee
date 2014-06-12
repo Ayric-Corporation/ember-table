@@ -276,8 +276,8 @@ Ember.View.extend Ember.AddeparMixins.StyleBindingsMixin,
   resizableOption: Ember.computed ->
     handles: 'e'
     minHeight: 40
-    minWidth: @get('column.minWidth') || 100
-    maxWidth: @get('column.maxWidth') || 500
+    minWidth: @get('column.minWidth') || 10
+    maxWidth: @get('column.maxWidth') || undefined
     grid:     @get('column.snapGrid')
     resize: jQuery.proxy(@onColumnResize, this)
     stop: jQuery.proxy(@onColumnResize, this)
